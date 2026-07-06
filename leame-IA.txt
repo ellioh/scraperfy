@@ -1,0 +1,422 @@
+================================================================================
+  LEAME-IA.TXT — scraperfy.com
+  Documentacion tecnica para asistentes de IA
+  Ultima actualizacion: 2026-07-06
+================================================================================
+
+PROPOSITO DEL PROYECTO
+--------------------------------------------------------------------------------
+Scraperfy es un SaaS de web scraping como servicio dirigido a empresas en Peru
+y Latinoamerica. El sitio funciona como landing page de producto, catalogo de
+servicios de extraccion de datos, blog tecnico sobre scraping y captacion de
+leads/clientes.
+
+Los "productos" son servicios de scraping (extraccion unica, monitoreo mensual,
+dataset a medida, enterprise), no productos fisicos. El flujo de conversion es:
+visitante → contacto/cotizacion, no e-commerce con carrito/pago.
+
+URL de produccion: https://scraperfy.com
+Repositorio:       https://github.com/ellioh/scraperfy
+Rama principal:    main
+
+El dueno del proyecto trabaja tambien en hleon-dev, compara2-back y
+compara2-front. Cuando se pide hacer cambios aqui, el contexto es este
+repositorio unicamente.
+
+
+STACK TECNICO
+--------------------------------------------------------------------------------
+- Framework:      Next.js 15.3.3 (App Router) con React 19
+- Lenguaje:       TypeScript 5 (strict mode)
+- Estilos:        Tailwind CSS 3 — sin CSS modules, sin styled-components
+- Base de datos:  NINGUNA — almacenamiento en archivos JSON en /data/
+- Autenticacion:  Cookie httpOnly propia (sin NextAuth, sin JWT de terceros)
+- Dependencias:   Solo next + react + react-dom (sin librerias de UI externas)
+- Markdown:       Renderer propio en lib/markdown.ts (sin remark, sin marked)
+- Deploy:         Vercel (inferido por estructura; sin config especial)
+
+Comandos:
+  npm run dev     — servidor de desarrollo en http://localhost:3000
+  npm run build   — build de produccion (verifica TypeScript)
+  npm run start   — sirve el build de produccion
+  npx tsc --noEmit — solo verificacion de tipos (sin emitir)
+
+
+PALETA DE COLORES Y DISENO
+--------------------------------------------------------------------------------
+Color base:    gray-950 (fondo principal, mas oscuro que gray-900)
+Acento:        emerald-400 / emerald-500 (botones, badges, iconos activos)
+Secundario:    cyan-400 (gradientes, codigo, detalles enterprise)
+Texto:         white (titulos), gray-300/400 (cuerpo), gray-500/600 (muted)
+Bordes:        gray-800 (cards, separadores)
+Cards hover:   border-emerald-800/60, text-emerald-300
+
+Convenciones de diseno:
+- Bordes redondeados: rounded-2xl para cards grandes, rounded-xl para medianos
+- Punto animado del logo: bg-emerald-400 animate-pulse
+- Gradiente hero: from-emerald-400 to-cyan-400 bg-clip-text text-transparent
+- Nav fija: backdrop-blur bg-gray-950/90 border-b border-gray-800/60
+- Badge "Mas popular": border-emerald-500 bg-emerald-950/30 (highlighting especial)
+- Badge "Enterprise": border-cyan-700/50 bg-cyan-950/20
+- CTA principal: bg-emerald-500 hover:bg-emerald-400 text-white
+- Botones secundarios: border border-gray-700 hover:border-gray-500 text-gray-300
+
+DIFERENCIA CLAVE CON hleon-dev: hleon-dev usa slate-*/indigo-*, scraperfy usa
+gray-*/emerald-*. No mezclar paletas entre proyectos.
+
+
+ESTRUCTURA DE ARCHIVOS
+--------------------------------------------------------------------------------
+scraperfy/
+├── app/
+│   ├── layout.tsx                  — RootLayout: metadata SEO global + JSON-LD
+│   │                                 Organization + WebSite schemas
+│   ├── page.tsx                    — Homepage (server component): hero, features,
+│   │                                 how-it-works, API preview, pricing, testimonials,
+│   │                                 blog preview, CTA, footer
+│   ├── servicios/
+│   │   └── page.tsx                — Catalogo publico de servicios/productos
+│   ├── blog/
+│   │   ├── page.tsx                — Listado de posts con filtros por categoria
+│   │   ├── [slug]/page.tsx         — Post individual con JSON-LD BlogPosting
+│   │   └── categoria/[categoria]/
+│   │       └── page.tsx            — Posts filtrados por categoria
+│   ├── contacto/
+│   │   └── page.tsx                — Formulario de contacto/cotizacion
+│   ├── precios/
+│   │   └── page.tsx                — Pagina de precios (placeholder o detalle)
+│   ├── docs/
+│   │   └── page.tsx                — Documentacion de la API (placeholder)
+│   ├── sitemap.ts                  — MetadataRoute.Sitemap automatico
+│   ├── robots.ts                   — MetadataRoute.Robots
+│   ├── feed.xml/
+│   │   └── route.ts                — RSS 2.0 del blog
+│   ├── admin/
+│   │   ├── page.tsx                — Login del panel admin
+│   │   └── dashboard/
+│   │       ├── page.tsx            — Dashboard: stats (solicitudes + blog)
+│   │       │                         + quick links a solicitudes/blog/productos
+│   │       ├── solicitudes/page.tsx — Ver solicitudes de contacto
+│   │       ├── blog/
+│   │       │   ├── page.tsx        — Listado de posts (admin)
+│   │       │   ├── nuevo/page.tsx  — Crear post
+│   │       │   └── [id]/page.tsx   — Editar post existente
+│   │       └── productos/
+│   │           └── page.tsx        — CRUD inline de servicios/productos
+│   └── api/
+│       ├── contacto/route.ts       — POST: guarda solicitud en data/solicitudes.json
+│       └── admin/
+│           ├── login/route.ts      — POST: verifica password, setea cookie
+│           ├── logout/route.ts     — POST: borra cookie
+│           ├── solicitudes/route.ts — GET: lista; PATCH: marcar leido
+│           ├── blog/route.ts       — GET/POST/PUT/DELETE posts
+│           ├── blog/[id]/route.ts  — GET post individual por ID
+│           └── productos/route.ts  — GET/POST/PUT/DELETE productos
+├── components/
+│   └── ScraperfyNav.tsx            — Navbar con mobile menu ("use client")
+│                                     Extraido para que app/page.tsx sea server component
+├── lib/
+│   ├── auth.ts       — generateToken, verifyToken, isAuthenticated (cookie: scraperfy_admin_token)
+│   ├── blog.ts       — getPosts, getPost, getPostById, savePost, deletePost,
+│   │                   getCategorias, getPostsByCategoria, slugify
+│   ├── data.ts       — getSolicitudes, saveSolicitud, marcarLeido
+│   ├── markdown.ts   — renderMarkdown(raw: string): string
+│   └── productos.ts  — getProductos, getProductoById, saveProducto, deleteProducto
+├── data/
+│   ├── posts.json       — Array de objetos Post (blog)
+│   ├── productos.json   — Array de objetos Producto (servicios)
+│   └── solicitudes.json — Array de objetos Solicitud (formulario de contacto)
+├── public/
+├── tailwind.config.ts
+├── tsconfig.json
+└── package.json
+
+
+MODELOS DE DATOS
+--------------------------------------------------------------------------------
+
+Post (data/posts.json):
+{
+  "id": "post-001",
+  "titulo": "...",
+  "slug": "slug-kebab-case",           // URL: /blog/[slug]
+  "resumen": "...",                    // texto corto para cards y meta
+  "contenido": "## H2\n\nTexto...",   // Markdown
+  "categoria": "Tutorial",             // string libre (Tutorial, Comparativa, etc.)
+  "fechaPublicacion": "2025-01-15",
+  "fechaActualizacion": "2025-01-15",
+  "tags": ["web scraping", "python"],
+  "metaDescripcion": "...",            // max 160 chars
+  "publicado": true
+}
+
+Producto (data/productos.json):
+{
+  "id": "svc-001",
+  "nombre": "Extraccion Unica",
+  "descripcion": "...",
+  "precio": 199,
+  "moneda": "S/.",
+  "tipo": "unico",                     // "unico" | "mensual" | "cotizar"
+  "etiqueta": "",                      // "Mas popular", "Enterprise", o ""
+  "caracteristicas": [                 // array de strings para la lista de features
+    "Hasta 10,000 URLs",
+    "Entrega en 24h"
+  ],
+  "cta": "Contratar ahora",           // texto del boton
+  "activo": true,                      // false = no aparece en /servicios
+  "orden": 1                           // orden de aparicion (menor = primero)
+}
+
+Solicitud (data/solicitudes.json):
+{
+  "id": "1700000000000",
+  "nombre": "...",
+  "email": "...",
+  "empresa": "...",
+  "url_objetivo": "https://...",       // URL del sitio a scrapear
+  "frecuencia": "diario",             // frecuencia de extraccion
+  "formato": "JSON",                  // formato de entrega deseado
+  "descripcion": "...",
+  "plan": "Pro",                       // plan seleccionado (opcional)
+  "fecha": "2025-01-15T10:00:00.000Z",
+  "leido": false
+}
+
+DIFERENCIA con hleon-dev: El modelo Solicitud de scraperfy tiene campos
+especificos de scraping (url_objetivo, frecuencia, formato, plan) en vez de
+los campos de consultoria de hleon (tipo, presupuesto).
+
+
+AUTENTICACION DEL PANEL ADMIN
+--------------------------------------------------------------------------------
+Sistema propio sin librerias externas:
+
+1. El usuario va a /admin y llena formulario con password
+2. POST /api/admin/login — verifica contra env var ADMIN_PASSWORD
+3. Si correcto: setea cookie httpOnly "scraperfy_admin_token" con token Base64
+4. Token: Buffer.from(`${SECRET}:${Date.now()}`).toString("base64")
+5. Verificacion: decoded.startsWith(`${SECRET}:`)
+6. Las rutas protegidas llaman isAuthenticated() de lib/auth.ts
+7. Las API routes de /api/admin/blog/* y /api/admin/productos/* verifican
+   directamente: cookie("scraperfy_admin_token").value === ADMIN_SECRET
+
+Variables de entorno necesarias (.env.local):
+  ADMIN_PASSWORD=tu-password-seguro
+  ADMIN_TOKEN_SECRET=minimo-32-caracteres-aleatorios
+  ADMIN_SECRET=mismo-o-diferente-secret-para-apis-de-blog-y-productos
+
+ATENCION: Hay dos mecanismos coexistiendo:
+- lib/auth.ts usa ADMIN_TOKEN_SECRET para generar/verificar tokens (Base64)
+- api/admin/blog/* y api/admin/productos/* comparan la cookie directamente
+  contra ADMIN_SECRET. Para que funcionen, ADMIN_SECRET debe coincidir con
+  el token almacenado. En produccion, unificar o asegurarse que ambas variables
+  esten configuradas consistentemente.
+
+
+CAPA DE DATOS (sin base de datos)
+--------------------------------------------------------------------------------
+Todo se guarda en archivos JSON en /data/. Las funciones de lib/*.ts usan
+Node.js fs directamente. Solo funcionan en server components y API routes.
+
+NUNCA importar lib/blog.ts, lib/data.ts o lib/productos.ts en "use client".
+
+Patrones de uso:
+
+  // Blog
+  const posts    = getPosts();           // solo publicados
+  const posts    = getPosts(false);      // todos (para admin)
+  const post     = getPost("mi-slug");
+  const post     = getPostById("123");
+  savePost({ titulo, slug, ... })        // crea si no tiene id, actualiza si tiene
+  deletePost("123")
+
+  // Productos
+  const prods    = getProductos();       // solo activos (soloActivos=true por defecto)
+  const prods    = getProductos(false);  // todos incluyendo inactivos (para admin)
+  const prod     = getProductoById("svc-001");
+  saveProducto({ nombre, ... })          // crea o actualiza
+  deleteProducto("svc-001")
+
+  // Solicitudes
+  const solic    = getSolicitudes();
+  saveSolicitud({ nombre, email, ... })
+  marcarLeido("123")
+
+El campo "contenido" de posts puede tener saltos de linea reales. Node.js
+JSON.parse los acepta; usar JSON.stringify al escribir para mantener coherencia.
+
+
+SEO Y METADATOS
+--------------------------------------------------------------------------------
+- app/layout.tsx: Organization + WebSite JSON-LD, metadataBase, title template
+  "%s | Scraperfy", keywords especificos de scraping, OG/Twitter card global
+- app/blog/[slug]/page.tsx: generateMetadata dinamico + JSON-LD BlogPosting
+  con author = Organization (no Person, es producto/empresa)
+- app/sitemap.ts: paginas estaticas + posts publicados + categorias
+- app/robots.ts: disallows /admin/ y /api/admin/
+- app/feed.xml/route.ts: RSS 2.0 con ultimos 20 posts
+
+Title template: "%s | Scraperfy"
+Ejemplo: "Web scraping vs APIs | Scraperfy Blog"
+
+BASE_URL en archivos SEO: "https://scraperfy.com"
+
+
+MARKDOWN RENDERER (lib/markdown.ts)
+--------------------------------------------------------------------------------
+Identico en estructura al de hleon-dev pero con paleta gray/emerald:
+
+Clases Tailwind de scraperfy (DIFERENTE a hleon-dev):
+  H2:    text-2xl font-bold text-white mt-8 mb-4
+  H3:    text-xl font-semibold text-white mt-6 mb-3
+  Cod:   bg-gray-800 rounded-xl p-4 my-4 overflow-x-auto text-sm font-mono text-emerald-300
+  p:     text-gray-300 leading-relaxed mb-4
+  ul:    list-none space-y-2 mb-4 (bullets: text-emerald-400)
+  a:     text-emerald-400 hover:text-emerald-300 underline
+
+Para renderizar:
+  import { renderMarkdown } from "@/lib/markdown";
+  const html = renderMarkdown(post.contenido);
+  <div dangerouslySetInnerHTML={{ __html: html }} />
+
+
+NAVBAR (components/ScraperfyNav.tsx)
+--------------------------------------------------------------------------------
+La navbar es un "use client" separado porque usa useState para el menu mobile.
+Se importa en app/page.tsx (server component) como componente hijo.
+
+Links actuales en el nav:
+  Caracteristicas → /#caracteristicas
+  Servicios       → /servicios
+  Blog            → /blog
+  Precios         → /precios
+  Docs            → /docs
+  Contacto        → /contacto
+  CTA button      → /contacto ("Empezar gratis")
+
+Para agregar un link nuevo al nav, editar components/ScraperfyNav.tsx
+(tanto el menu desktop como el menu mobile).
+
+
+PAGINA DE SERVICIOS (/servicios)
+--------------------------------------------------------------------------------
+app/servicios/page.tsx es un server component que llama a getProductos().
+Renderiza una grilla de cards con:
+- Precio (o "A cotizar" si tipo === "cotizar")
+- Lista de caracteristicas con checkmarks emerald
+- Boton CTA que lleva a /contacto
+
+Highlighting especial:
+  etiqueta === "Mas popular" → border-emerald-500 bg-emerald-950/30
+  etiqueta === "Enterprise"  → border-cyan-700/50 bg-cyan-950/20
+  etiqueta === ""             → border-gray-800 bg-gray-900/50
+
+Los perfiles de Upwork/Workana en /servicios estan como href="#".
+Para activarlos: buscar los <a href="#"> en app/servicios/page.tsx y
+reemplazar "#" con las URLs reales.
+
+
+PANEL ADMIN — ESTRUCTURA
+--------------------------------------------------------------------------------
+URL base: /admin (login)
+Dashboard: /admin/dashboard
+
+A diferencia de hleon-dev, scraperfy NO tiene layout/sidebar compartido para
+el dashboard. Cada pagina de admin es standalone con su propia estructura y
+un link "← Dashboard" para navegar.
+
+Rutas del dashboard:
+  /admin/dashboard              — stats (solicitudes + blog) + quick links
+  /admin/dashboard/solicitudes  — ver y marcar solicitudes de contacto
+  /admin/dashboard/blog         — listado de posts (publicar/editar/eliminar)
+  /admin/dashboard/blog/nuevo   — crear nuevo post
+  /admin/dashboard/blog/[id]    — editar post existente
+  /admin/dashboard/productos    — CRUD inline de servicios (form embebido en la pagina)
+
+DIFERENCIA con hleon-dev: Productos tiene CRUD inline (el formulario aparece
+en la misma pagina, no en una ruta separada). Blog sigue el patron de rutas
+separadas para crear/editar.
+
+
+PATRONES Y CONVENCIONES
+--------------------------------------------------------------------------------
+1. Server components por defecto. "use client" solo para formularios, useState,
+   useEffect o event handlers.
+
+2. La navbar (ScraperfyNav) es client component separado, importado en page.tsx
+   para que page.tsx pueda ser server component y llamar a getPosts().
+
+3. Rutas API admin siempre verifican autenticacion primero. Retorno estandar de
+   error: { error: "No autorizado" } con status 401.
+
+4. generateStaticParams en /blog/[slug] y /blog/categoria/[categoria] para SSG.
+   generateMetadata para SEO dinamico por pagina.
+
+5. IDs de posts: strings como "post-001". IDs de productos: strings como
+   "svc-001". Nuevos registros via admin usan Date.now().toString().
+
+6. No hay imagenes de posts. Si se agregan, usar Next.js Image con alt.
+
+7. Tailwind exclusivamente. Sin estilos inline. Sin @apply en CSS.
+
+8. Todo el contenido es en espanol (es-PE como locale en fechas y textos).
+
+9. Para agregar una nueva pagina publica: crear app/nueva-pagina/page.tsx
+   como server component. Si necesita datos, importar de lib/*.ts directamente.
+   Agregar la ruta al sitemap en app/sitemap.ts.
+
+
+CATEGORIAS DE BLOG ACTUALES (data/posts.json)
+--------------------------------------------------------------------------------
+- Tutorial
+- Comparativa
+- Casos de Uso
+
+Para agregar una nueva categoria: simplemente crear un post con la nueva
+categoria. Se generara automaticamente la pagina /blog/categoria/[nueva-cat]
+via generateStaticParams (requiere rebuild).
+
+
+ERRORES COMUNES Y SOLUCIONES
+--------------------------------------------------------------------------------
+Error: "You're importing a component that needs ... only works in a Client Component"
+Causa: Importar lib/blog.ts, lib/productos.ts, etc. en un "use client"
+Solucion: Mover la logica de datos a un server component padre o API route.
+
+Error: TypeScript - tipo union no asignable al tipo literal
+Ejemplo: tipo "unico" | "mensual" | "cotizar" no asignable a "unico"
+Solucion: Declarar el tipo explicitamente:
+  type Tipo = "unico" | "mensual" | "cotizar";
+  const [form, setForm] = useState<{ tipo: Tipo; ... }>({ tipo: "unico" })
+
+Error: productos/page.tsx form no muestra el producto al editar
+Verificar: que setMostrarForm(true) se llame en iniciarEdicion().
+
+Error: 401 al llamar a /api/admin/blog o /api/admin/productos desde el admin
+Causa posible: ADMIN_SECRET no esta definido o no coincide con el token de la
+cookie. Verificar .env.local tenga ADMIN_SECRET configurado.
+
+Error: /blog/categoria/casos de uso — URL con espacio
+El slug de categoria se genera con encodeURIComponent en los links.
+La ruta usa decodeURIComponent para recuperar el nombre original.
+Si hay problemas, simplificar nombres de categorias (sin espacios ni acentos).
+
+
+GIT Y DEPLOY
+--------------------------------------------------------------------------------
+Repositorio: https://github.com/ellioh/scraperfy
+Rama: main (unica rama activa)
+Deploy: cada push a main dispara deploy automatico en Vercel
+
+Workflow estandar:
+  git add <archivos especificos>
+  git commit -m "descripcion del cambio"
+  git push
+
+Nunca hacer push de .env.local (esta en .gitignore).
+
+Variables de entorno en produccion (configurar en Vercel dashboard):
+  ADMIN_PASSWORD
+  ADMIN_TOKEN_SECRET
+  ADMIN_SECRET
