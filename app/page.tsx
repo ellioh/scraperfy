@@ -1,49 +1,6 @@
-"use client";
-import { useState } from "react";
 import Link from "next/link";
-
-function Nav() {
-  const [open, setOpen] = useState(false);
-  return (
-    <nav className="fixed top-0 inset-x-0 z-50 border-b border-gray-800/60 bg-gray-950/90 backdrop-blur">
-      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          Scraperfy
-        </Link>
-        <div className="hidden md:flex items-center gap-6 text-sm text-gray-400">
-          <a href="#caracteristicas" className="hover:text-white transition-colors">Características</a>
-          <Link href="/precios" className="hover:text-white transition-colors">Precios</Link>
-          <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
-          <Link href="/contacto" className="hover:text-white transition-colors">Contacto</Link>
-        </div>
-        <div className="hidden md:flex items-center gap-3">
-          <Link href="/contacto"
-            className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white transition-colors">
-            Empezar gratis
-          </Link>
-        </div>
-        <button onClick={() => setOpen(!open)} className="md:hidden p-2 text-gray-400">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            {open ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              : <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />}
-          </svg>
-        </button>
-      </div>
-      {open && (
-        <div className="md:hidden border-t border-gray-800 bg-gray-950 px-4 py-3 space-y-2 text-sm">
-          <a href="#caracteristicas" className="block py-1.5 text-gray-300">Características</a>
-          <Link href="/precios" className="block py-1.5 text-gray-300">Precios</Link>
-          <Link href="/docs" className="block py-1.5 text-gray-300">Docs</Link>
-          <Link href="/contacto" className="block py-1.5 text-gray-300">Contacto</Link>
-          <Link href="/contacto" className="block mt-2 py-2 text-center font-semibold rounded-lg bg-emerald-500 text-white">
-            Empezar gratis
-          </Link>
-        </div>
-      )}
-    </nav>
-  );
-}
+import ScraperfyNav from "@/components/ScraperfyNav";
+import { getPosts } from "@/lib/blog";
 
 const FEATURES = [
   { icon: "⚡", title: "Velocidad masiva", desc: "Scraping paralelo de miles de páginas por minuto con arquitectura distribuida." },
@@ -85,9 +42,11 @@ const PLANS = [
 ];
 
 export default function HomePage() {
+  const recentPosts = getPosts().slice(0, 3);
+
   return (
     <>
-      <Nav />
+      <ScraperfyNav />
 
       {/* Hero */}
       <section className="pt-28 pb-20 px-4 relative overflow-hidden">
@@ -113,9 +72,9 @@ export default function HomePage() {
               className="px-7 py-3 rounded-xl font-bold text-base bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-900/40 transition-all">
               Empezar gratis
             </Link>
-            <Link href="/docs"
+            <Link href="/servicios"
               className="px-7 py-3 rounded-xl font-bold text-base border border-gray-700 text-gray-300 hover:border-gray-500 hover:text-white transition-all">
-              Ver la API →
+              Ver servicios →
             </Link>
           </div>
 
@@ -141,7 +100,7 @@ export default function HomePage() {
     "url": "https://ejemplo.com/laptop-hp-pavilion"
   },
   {
-    "nombre": "Monitor LG 27\" 4K",
+    "nombre": "Monitor LG 27\\" 4K",
     "precio": "S/. 1,199.00",
     "url": "https://ejemplo.com/monitor-lg-27"
   }
@@ -321,6 +280,43 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Blog preview */}
+      {recentPosts.length > 0 && (
+        <section className="py-20 px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <div className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-2">Blog</div>
+                <h2 className="text-2xl font-bold text-white">Últimos artículos</h2>
+              </div>
+              <Link href="/blog" className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors">
+                Ver todos →
+              </Link>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-5">
+              {recentPosts.map((post) => (
+                <Link
+                  key={post.id}
+                  href={`/blog/${post.slug}`}
+                  className="group rounded-2xl border border-gray-800 bg-gray-900/50 hover:border-emerald-800/60 p-6 flex flex-col gap-3 transition-all hover:-translate-y-1"
+                >
+                  <span className="text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full w-fit">
+                    {post.categoria}
+                  </span>
+                  <h3 className="text-white font-bold text-sm leading-snug group-hover:text-emerald-300 transition-colors">
+                    {post.titulo}
+                  </h3>
+                  <p className="text-gray-500 text-xs leading-relaxed flex-1">{post.resumen.slice(0, 100)}...</p>
+                  <span className="text-emerald-400 text-xs group-hover:translate-x-0.5 transition-transform">
+                    Leer artículo →
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* CTA */}
       <section className="py-24 px-4">
         <div className="max-w-2xl mx-auto text-center">
@@ -345,8 +341,10 @@ export default function HomePage() {
           <div className="flex gap-10 text-sm text-gray-500">
             <div className="space-y-2">
               <div className="font-semibold text-gray-300 text-xs uppercase tracking-wide mb-3">Producto</div>
+              <Link href="/servicios" className="block hover:text-white transition-colors">Servicios</Link>
               <Link href="/precios" className="block hover:text-white transition-colors">Precios</Link>
               <Link href="/docs" className="block hover:text-white transition-colors">Documentación</Link>
+              <Link href="/blog" className="block hover:text-white transition-colors">Blog</Link>
               <Link href="/contacto" className="block hover:text-white transition-colors">Contacto</Link>
             </div>
           </div>

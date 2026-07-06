@@ -1,0 +1,80 @@
+[
+  {
+    "id": "svc-001",
+    "nombre": "Extracción Única",
+    "descripcion": "Te entregamos los datos exactos que necesitas en un solo pedido. Ideal para investigación de mercado, benchmarking o análisis puntual de competencia.",
+    "precio": 199,
+    "moneda": "S/.",
+    "tipo": "unico",
+    "etiqueta": "",
+    "caracteristicas": [
+      "Hasta 10,000 registros",
+      "Formato JSON, CSV o Excel",
+      "Entrega en 48-72 horas",
+      "1 revisión incluida",
+      "Soporte por WhatsApp"
+    ],
+    "cta": "Solicitar extracción",
+    "activo": true,
+    "orden": 1
+  },
+  {
+    "id": "svc-002",
+    "nombre": "Monitoreo Mensual",
+    "descripcion": "Datos actualizados automáticamente cada día, semana o mes. Perfecto para seguimiento de precios, inventarios, leads o noticias de competidores.",
+    "precio": 299,
+    "moneda": "S/.",
+    "tipo": "mensual",
+    "etiqueta": "Más popular",
+    "caracteristicas": [
+      "Hasta 50,000 registros/mes",
+      "Actualizaciones automáticas",
+      "JSON, CSV o Excel",
+      "Dashboard de monitoreo",
+      "Alertas por email o webhook",
+      "Soporte prioritario"
+    ],
+    "cta": "Empezar monitoreo",
+    "activo": true,
+    "orden": 2
+  },
+  {
+    "id": "svc-003",
+    "nombre": "Dataset a Medida",
+    "descripcion": "No sabes cómo pedirlo. Te ayudamos a definir exactamente qué datos necesitas, cómo estructurarlos y los entregamos listos para analizar.",
+    "precio": 499,
+    "moneda": "S/.",
+    "tipo": "unico",
+    "etiqueta": "",
+    "caracteristicas": [
+      "Consultoría inicial gratuita",
+      "Diseño de esquema de datos",
+      "Extracción y limpieza",
+      "Formato analizable (Excel/BI)",
+      "Documentación del dataset"
+    ],
+    "cta": "Solicitar consultoría",
+    "activo": true,
+    "orden": 3
+  },
+  {
+    "id": "svc-004",
+    "nombre": "Scraping Empresarial",
+    "descripcion": "Solución de scraping a medida con API propia, volumen ilimitado e integración directa con tus sistemas (CRM, ERP, Power BI, Google Sheets).",
+    "precio": 0,
+    "moneda": "S/.",
+    "tipo": "cotizar",
+    "etiqueta": "Enterprise",
+    "caracteristicas": [
+      "Volumen ilimitado",
+      "API REST personalizada",
+      "Integración CRM/ERP/BI",
+      "SLA garantizado 99.9%",
+      "Soporte dedicado",
+      "Contrato y NDA"
+    ],
+    "cta": "Cotizar ahora",
+    "activo": true,
+    "orden": 4
+  }
+]

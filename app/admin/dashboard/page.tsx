@@ -1,6 +1,7 @@
 import { getSolicitudes } from "@/lib/data";
 import { isAuthenticated } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { getPosts } from "@/lib/blog";
 import Link from "next/link";
 
 export default async function DashboardPage() {
@@ -9,6 +10,9 @@ export default async function DashboardPage() {
   const solicitudes = getSolicitudes();
   const noLeidas = solicitudes.filter(s => !s.leido).length;
   const hoy = new Date().toLocaleDateString("es-PE", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+  const posts = getPosts(false);
+  const publicados = posts.filter((p) => p.publicado).length;
 
   return (
     <main className="min-h-screen p-6">
@@ -27,15 +31,39 @@ export default async function DashboardPage() {
           </form>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-5 mb-8">
-          <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-5">
             <div className="text-3xl font-bold text-emerald-400 mb-1">{solicitudes.length}</div>
             <div className="text-sm text-gray-400">Solicitudes totales</div>
           </div>
-          <div className={`rounded-2xl border p-6 ${noLeidas > 0 ? "border-emerald-700 bg-emerald-950/30" : "border-gray-800 bg-gray-900/50"}`}>
+          <div className={`rounded-2xl border p-5 ${noLeidas > 0 ? "border-emerald-700 bg-emerald-950/30" : "border-gray-800 bg-gray-900/50"}`}>
             <div className={`text-3xl font-bold mb-1 ${noLeidas > 0 ? "text-emerald-400" : "text-gray-500"}`}>{noLeidas}</div>
             <div className="text-sm text-gray-400">Sin leer</div>
           </div>
+          <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-5">
+            <div className="text-3xl font-bold text-emerald-400 mb-1">{publicados}</div>
+            <div className="text-sm text-gray-400">Artículos publicados</div>
+          </div>
+          <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-5">
+            <div className="text-3xl font-bold text-gray-500 mb-1">{posts.length}</div>
+            <div className="text-sm text-gray-400">Artículos totales</div>
+          </div>
+        </div>
+
+        {/* Quick links */}
+        <div className="grid sm:grid-cols-3 gap-3 mb-8">
+          <Link href="/admin/dashboard/solicitudes"
+            className="rounded-xl border border-gray-800 bg-gray-900/40 hover:border-emerald-800/60 p-4 text-sm font-medium text-gray-300 hover:text-white transition-all">
+            📬 Ver solicitudes
+          </Link>
+          <Link href="/admin/dashboard/blog"
+            className="rounded-xl border border-gray-800 bg-gray-900/40 hover:border-emerald-800/60 p-4 text-sm font-medium text-gray-300 hover:text-white transition-all">
+            ✍️ Gestionar blog
+          </Link>
+          <Link href="/admin/dashboard/productos"
+            className="rounded-xl border border-gray-800 bg-gray-900/40 hover:border-emerald-800/60 p-4 text-sm font-medium text-gray-300 hover:text-white transition-all">
+            🛍 Gestionar servicios
+          </Link>
         </div>
 
         <div className="flex items-center justify-between mb-4">
