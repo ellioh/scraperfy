@@ -458,6 +458,13 @@ Variables de entorno en produccion (configurar en Vercel dashboard):
   DB_POOL_SIZE (bajo en serverless, 2-5)
   N8N_WEBHOOK_URL, N8N_WEBHOOK_SECRET (opcionales)
 
+DESPLIEGUE EN VPS: ver DEPLOY.md (Docker Compose recomendado, o Node+PM2+nginx).
+Archivos: Dockerfile (stages deps/build/migrate/runner), docker-compose.yml
+(mysql + migrate + app + caddy con perfil "proxy"), Caddyfile, .env.vps.example.
+next.config.ts: output "standalone" y serverExternalPackages ["mysql2"] (sin esto
+mysql2 queda empaquetado en un chunk y sus require dinamicos pueden fallar).
+En produccion la cookie de sesion es Secure: el admin solo funciona por HTTPS.
+
 Vercel no aloja MySQL: hace falta una BD accesible por internet (VPS propio,
 Aiven, Railway, TiDB Cloud, etc.). Correr npm run db:init UNA vez apuntando a
 esa BD (con las DB_* exportadas) antes del primer uso.

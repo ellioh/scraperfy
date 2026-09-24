@@ -1,0 +1,92 @@
+# scraperfy en una VPS: MySQL + migracion + app (+ Caddy opcional para HTTPS).
+#
+#   cp .env.vps.example .env      # y editar los valores
+#   docker compose up -d --build
+#
+# Ver DEPLOY.md para la guia completa.
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?define DB_ROOT_PASSWORD en .env}
+      MYSQL_DATABASE: ${DB_NAME:-scraperfy}
+      MYSQL_USER: ${DB_USER:-scraperfy}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en .env}
+      TZ: UTC
+    volumes:
+      - mysql_data:/var/lib/mysql
+    # Sin "ports": MySQL solo es accesible desde la red interna de compose, nunca desde internet.
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  # Job de un solo uso: aplica db/schema.sql y siembra desde data/*.json solo si
+  # las tablas estan vacias. Es idempotente, corre en cada `up` sin riesgo.
+  migrate:
+    build:
+      context: .
+      target: migrate
+    restart: "no"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: ${DB_USER:-scraperfy}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-scraperfy}
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    environment:
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?define ADMIN_PASSWORD en .env}
+      ADMIN_TOKEN_SECRET: ${ADMIN_TOKEN_SECRET:?define ADMIN_TOKEN_SECRET en .env (32+ caracteres aleatorios)}
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: ${DB_USER:-scraperfy}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-scraperfy}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-}
+      N8N_WEBHOOK_SECRET: ${N8N_WEBHOOK_SECRET:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # Solo en localhost: lo expone Caddy (perfil "proxy") o el nginx que ya tengas en la VPS.
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+
+  # HTTPS automatico (Let's Encrypt). Opcional: `docker compose --profile proxy up -d`
+  # Requiere DOMAIN en .env y el DNS del dominio apuntando a la IP de la VPS.
+  caddy:
+    profiles: ["proxy"]
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  mysql_data:
+  caddy_data:
+  caddy_config:

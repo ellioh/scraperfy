@@ -6,7 +6,9 @@ Los "productos" son servicios (extraccion de datos), no e-commerce — el flujo 
 
 - URL produccion: https://scraperfy.com
 - Repo: https://github.com/ellioh/scraperfy (rama `main`)
-- Deploy: Vercel — cada push a main despliega automaticamente
+- Deploy: Vercel — cada push a main despliega automaticamente (necesita una MySQL externa y las vars `DB_*`; sin ellas las paginas dan 500)
+- Deploy en VPS: `Dockerfile` + `docker-compose.yml` (MySQL + migracion + app + Caddy opcional). Guia completa en `DEPLOY.md`, plantilla de variables en `.env.vps.example`. `next.config.ts` usa `output: "standalone"` y `mysql2` como paquete externo (no quitarlos).
+- En produccion la cookie de admin es `Secure`: el login solo funciona por HTTPS.
 
 ---
 
