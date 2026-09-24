@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description:
     "Extrae datos de cualquier sitio web de forma automática. Scraping escalable, programable y con soporte completo para sitios con JavaScript. Entrega en 48 horas.",
   keywords: [
-    "web scraping", "data extraction", "scraping service", "scraping API",
+    "web scraping", "data extraction", "scraping service",
     "extracción de datos", "web scraping Perú", "raspado web", "automatización datos",
     "scraping JavaScript", "scraping empresas", "dataset personalizado",
   ],

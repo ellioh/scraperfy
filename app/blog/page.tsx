@@ -31,7 +31,6 @@ export default async function BlogPage() {
             <Link href="/servicios" className="hover:text-white transition-colors">Servicios</Link>
             <Link href="/blog" className="text-white font-medium">Blog</Link>
             <Link href="/precios" className="hover:text-white transition-colors">Precios</Link>
-            <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
             <Link href="/contacto" className="hover:text-white transition-colors">Contacto</Link>
           </div>
           <Link href="/contacto" className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white transition-colors">

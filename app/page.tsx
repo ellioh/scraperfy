@@ -27,10 +27,6 @@ export default async function HomePage() {
       <section className="pt-28 pb-20 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(16,185,129,0.12)_0%,_transparent_60%)]" />
         <div className="max-w-5xl mx-auto text-center relative">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-800 bg-emerald-950/50 text-emerald-400 text-xs font-medium mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Nuevo: API v2 disponible con streaming
-          </div>
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
             Extrae datos de{" "}
             <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
@@ -135,49 +131,6 @@ export default async function HomePage() {
                 <p className="text-sm text-gray-400 leading-relaxed">{s.desc}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* API preview */}
-      <section className="py-24 px-4">
-        <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3">API REST</div>
-            <h2 className="text-3xl font-bold mb-4">Integra en minutos</h2>
-            <p className="text-gray-400 mb-6">API REST con autenticación Bearer. Disponible en cualquier lenguaje. Documentación completa con ejemplos.</p>
-            <Link href="/docs" className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors">
-              Ver documentación completa →
-            </Link>
-          </div>
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-800 bg-gray-900/80">
-              <span className="text-xs text-emerald-400 font-mono font-bold">POST</span>
-              <span className="text-xs text-gray-400 font-mono">/v1/jobs</span>
-            </div>
-            <pre className="p-5 text-xs font-mono text-gray-300 overflow-x-auto leading-relaxed">
-{`curl -X POST https://api.scraperfy.com/v1/jobs \\
-  -H "Authorization: Bearer sk_live_xxx" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "url": "https://ejemplo.com/productos",
-    "selector": ".product-card",
-    "fields": {
-      "nombre": "h2.title",
-      "precio": "span.price",
-      "imagen": "img@src"
-    },
-    "schedule": "0 8 * * *",
-    "format": "json"
-  }'
-
-// Respuesta:
-{
-  "job_id": "job_8f3a2c1d",
-  "status": "queued",
-  "estimated_time": "~12s"
-}`}
-            </pre>
           </div>
         </div>
       </section>
@@ -308,7 +261,6 @@ export default async function HomePage() {
               <div className="font-semibold text-gray-300 text-xs uppercase tracking-wide mb-3">Producto</div>
               <Link href="/servicios" className="block hover:text-white transition-colors">Servicios</Link>
               <Link href="/precios" className="block hover:text-white transition-colors">Precios</Link>
-              <Link href="/docs" className="block hover:text-white transition-colors">Documentación</Link>
               <Link href="/blog" className="block hover:text-white transition-colors">Blog</Link>
               <Link href="/contacto" className="block hover:text-white transition-colors">Contacto</Link>
             </div>

@@ -89,8 +89,7 @@ scraperfy/
 │   ├── contacto/
 │   │   └── page.tsx                — Server: lee servicios de la BD y renderiza ContactoForm
 │   │                                 (/precios no existe: next.config.ts la redirige a /servicios)
-│   ├── docs/
-│   │   └── page.tsx                — Documentacion de la API (placeholder)
+│   │                                 (/docs se elimino: no hay API; next.config.ts la redirige a /servicios)
 │   ├── sitemap.ts                  — MetadataRoute.Sitemap automatico
 │   ├── robots.ts                   — MetadataRoute.Robots
 │   ├── feed.xml/
@@ -323,13 +322,24 @@ Links actuales en el nav:
   Servicios       → /servicios
   Blog            → /blog
   Precios         → /precios (redirige a /servicios)
-  Docs            → /docs
   Contacto        → /contacto
   CTA button      → /contacto ("Empezar gratis")
 
 Para agregar un link nuevo al nav, editar components/ScraperfyNav.tsx
 (tanto el menu desktop como el menu mobile).
 
+
+MODELO DE ENTREGA: SOLO ARCHIVOS (decision del dueno)
+--------------------------------------------------------------------------------
+Los datos se entregan como archivos (Excel/CSV/JSON). NO hay API ni webhooks para
+clientes: una API requeriria un VPS dedicado y mantenimiento. Se elimino /docs
+(documentaba una API inexistente), la seccion "API REST" de la home, el cartel
+"Nuevo: API v2" y la opcion "Webhook" del formulario. No reintroducir promesas de
+API/webhook/dashboard de cliente sin decision explicita.
+El webhook de lib/n8n.ts es INTERNO (avisa al dueno de una solicitud nueva).
+Pendiente de decision (texto de marketing heredado de la epoca SaaS): pasos "Como
+funciona", tarjetas de caracteristicas, terminal de ejemplo y testimonios de la home
+todavia describen una herramienta self-service con jobs, cron, API y dashboard.
 
 PRECIOS Y SERVICIOS: UNA SOLA FUENTE (LA BASE DE DATOS)
 --------------------------------------------------------------------------------

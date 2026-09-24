@@ -39,7 +39,6 @@ export default function ContactoForm({ planes, planInicial }: { planes: PlanOpci
           </Link>
           <div className="flex items-center gap-4 text-sm text-gray-400">
             <Link href="/precios" className="hover:text-white">Precios</Link>
-            <Link href="/docs" className="hover:text-white">Docs</Link>
           </div>
         </div>
       </div>
@@ -102,7 +101,6 @@ export default function ContactoForm({ planes, planInicial }: { planes: PlanOpci
                   <option>JSON</option>
                   <option>CSV</option>
                   <option>Excel</option>
-                  <option>Webhook</option>
                 </select>
               </div>
             </div>

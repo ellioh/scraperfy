@@ -10,7 +10,11 @@ const nextConfig: NextConfig = {
   // /precios duplicaba /servicios con planes fijos (Free/Pro) que no existen en el gestor.
   // Los precios reales viven en la BD y se muestran en /servicios; se conservan los enlaces viejos.
   async redirects() {
-    return [{ source: "/precios", destination: "/servicios", permanent: true }];
+    return [
+      { source: "/precios", destination: "/servicios", permanent: true },
+      // /docs describia una API REST que no se ofrece: la entrega es por archivo (Excel/CSV/JSON).
+      { source: "/docs", destination: "/servicios", permanent: true },
+    ];
   },
 };
 

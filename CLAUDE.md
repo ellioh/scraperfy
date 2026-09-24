@@ -72,7 +72,7 @@ app/
   blog/
     page.tsx / [slug]/page.tsx / categoria/[categoria]/page.tsx
   contacto/page.tsx           — Server: lee servicios de la BD y renderiza <ContactoForm/>
-  docs/page.tsx               — (/precios ya no existe: redirige a /servicios via next.config.ts)
+  (/precios y /docs ya no existen: next.config.ts las redirige a /servicios)
   sitemap.ts / robots.ts
   feed.xml/route.ts           — RSS 2.0
   admin/
@@ -213,7 +213,11 @@ Nunca escribir precios ni planes en el codigo. Todo sale de `productos` (admin >
 - `/contacto` → desplegable "Servicio de interes" con los servicios activos; `?plan=<nombre>` lo preselecciona (las tarjetas enlazan asi). Lo guardado en `solicitudes.plan` es el nombre del servicio.
 - Meta description de `/servicios`: el "desde S/. X" se calcula del servicio activo mas barato.
 - `/precios` es una redireccion permanente a `/servicios` (`next.config.ts`).
-- Precios de ejemplo dentro de bloques de codigo (docs/home, `S/. 2,499.00`) son datos de muestra de una extraccion, no planes.
+- Precios de ejemplo dentro de bloques de codigo (home, `S/. 2,499.00`) son datos de muestra de una extraccion, no planes.
+
+## Modelo de entrega: SOLO ARCHIVOS (decision del dueno)
+
+Scraperfy entrega los datos como archivos (Excel/CSV/JSON), NO ofrece API ni webhooks a clientes: una API exigiria un VPS dedicado y mantenimiento. Por eso se elimino `/docs` (documentacion de una API inexistente), la seccion "API REST" de la home, el cartel "API v2" y la opcion "Webhook" del formulario. No reintroducir promesas de API/webhook/dashboard de cliente sin decision explicita. (El webhook de `lib/n8n.ts` es interno: avisa al dueno de una solicitud nueva, no es un servicio al cliente.)
 
 ### /servicios
 

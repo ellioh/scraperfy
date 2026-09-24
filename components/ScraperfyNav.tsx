@@ -16,7 +16,6 @@ export default function ScraperfyNav() {
           <Link href="/servicios" className="hover:text-white transition-colors">Servicios</Link>
           <Link href="/blog" className="hover:text-white transition-colors">Blog</Link>
           <Link href="/precios" className="hover:text-white transition-colors">Precios</Link>
-          <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
           <Link href="/contacto" className="hover:text-white transition-colors">Contacto</Link>
         </div>
         <div className="hidden md:flex items-center gap-3">
@@ -43,7 +42,6 @@ export default function ScraperfyNav() {
           <Link href="/servicios" className="block py-1.5 text-gray-300">Servicios</Link>
           <Link href="/blog" className="block py-1.5 text-gray-300">Blog</Link>
           <Link href="/precios" className="block py-1.5 text-gray-300">Precios</Link>
-          <Link href="/docs" className="block py-1.5 text-gray-300">Docs</Link>
           <Link href="/contacto" className="block py-1.5 text-gray-300">Contacto</Link>
           <Link
             href="/contacto"
