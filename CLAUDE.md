@@ -71,8 +71,8 @@ app/
   servicios/page.tsx          — Catalogo publico de servicios (llama getProductos())
   blog/
     page.tsx / [slug]/page.tsx / categoria/[categoria]/page.tsx
-  contacto/page.tsx
-  precios/page.tsx / docs/page.tsx
+  contacto/page.tsx           — Server: lee servicios de la BD y renderiza <ContactoForm/>
+  docs/page.tsx               — (/precios ya no existe: redirige a /servicios via next.config.ts)
   sitemap.ts / robots.ts
   feed.xml/route.ts           — RSS 2.0
   admin/
@@ -90,6 +90,8 @@ app/
 
 components/
   ScraperfyNav.tsx            — Navbar "use client" (extraida para que page.tsx sea server)
+  ProductosGrid.tsx           — Tarjetas de servicio/precio (server). UNICA definicion visual: home y /servicios
+  ContactoForm.tsx            — Formulario de contacto "use client"; recibe los servicios por props
 
 lib/                          — TODAS las funciones de datos son async (await)
   auth.ts        — isAuthenticated(), cookie: "scraperfy_admin_token"
@@ -204,7 +206,16 @@ Uso: `<div dangerouslySetInnerHTML={{ __html: renderMarkdown(post.contenido) }} 
 
 ---
 
-## Pagina de servicios (/servicios)
+## Precios y servicios: UNA sola fuente (la BD)
+
+Nunca escribir precios ni planes en el codigo. Todo sale de `productos` (admin > Productos):
+- Home (`#precios`) y `/servicios` → `<ProductosGrid productos={await getProductos()} />`
+- `/contacto` → desplegable "Servicio de interes" con los servicios activos; `?plan=<nombre>` lo preselecciona (las tarjetas enlazan asi). Lo guardado en `solicitudes.plan` es el nombre del servicio.
+- Meta description de `/servicios`: el "desde S/. X" se calcula del servicio activo mas barato.
+- `/precios` es una redireccion permanente a `/servicios` (`next.config.ts`).
+- Precios de ejemplo dentro de bloques de codigo (docs/home, `S/. 2,499.00`) son datos de muestra de una extraccion, no planes.
+
+### /servicios
 
 `app/servicios/page.tsx` es server component. Llama `getProductos()` (solo activos).
 Highlighting por etiqueta:

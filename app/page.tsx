@@ -1,6 +1,8 @@
 import Link from "next/link";
 import ScraperfyNav from "@/components/ScraperfyNav";
 import { getPosts } from "@/lib/blog";
+import { getProductos } from "@/lib/productos";
+import ProductosGrid from "@/components/ProductosGrid";
 
 const FEATURES = [
   { icon: "⚡", title: "Velocidad masiva", desc: "Scraping paralelo de miles de páginas por minuto con arquitectura distribuida." },
@@ -11,40 +13,11 @@ const FEATURES = [
   { icon: "🛡", title: "99.9% uptime", desc: "Reintentos automáticos, monitoreo 24/7 y alertas por email si algo falla." },
 ];
 
-const PLANS = [
-  {
-    name: "Free",
-    price: "S/. 0",
-    period: "/mes",
-    desc: "Para explorar",
-    features: ["500 páginas/mes", "1 job activo", "Solo JSON", "Soporte community"],
-    cta: "Empezar gratis",
-    highlight: false,
-  },
-  {
-    name: "Pro",
-    price: "S/. 149",
-    period: "/mes",
-    desc: "Para equipos y startups",
-    features: ["50,000 páginas/mes", "10 jobs activos", "JSON, CSV, Excel", "Proxies básicos", "Webhooks", "Soporte por email"],
-    cta: "Empezar Pro",
-    highlight: true,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    period: "",
-    desc: "Para grandes volúmenes",
-    features: ["Páginas ilimitadas", "Jobs ilimitados", "Todos los formatos", "Proxies premium", "SLA garantizado", "Soporte dedicado"],
-    cta: "Contactar ventas",
-    highlight: false,
-  },
-];
-
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const recentPosts = (await getPosts()).slice(0, 3);
+  const [posts, productos] = await Promise.all([getPosts(), getProductos()]);
+  const recentPosts = posts.slice(0, 3);
 
   return (
     <>
@@ -229,36 +202,26 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Pricing */}
+      {/* Servicios y precios: salen de la base de datos (admin > Productos) */}
       <section id="precios" className="py-24 px-4">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-3">Planes simples y transparentes</h2>
-          <p className="text-gray-400 text-center mb-12">Sin contratos. Cancela cuando quieras.</p>
-          <div className="grid sm:grid-cols-3 gap-6">
-            {PLANS.map(p => (
-              <div key={p.name}
-                className={`rounded-2xl border p-7 flex flex-col ${p.highlight ? "border-emerald-500 bg-emerald-950/30 shadow-lg shadow-emerald-900/20" : "border-gray-800 bg-gray-900/50"}`}>
-                {p.highlight && <div className="text-xs font-bold text-emerald-400 mb-3 uppercase tracking-widest">Más popular</div>}
-                <div className="mb-1 font-bold text-lg">{p.name}</div>
-                <div className="text-xs text-gray-500 mb-4">{p.desc}</div>
-                <div className="mb-6">
-                  <span className="text-3xl font-extrabold">{p.price}</span>
-                  <span className="text-gray-500 text-sm">{p.period}</span>
-                </div>
-                <ul className="space-y-2.5 mb-8 flex-1">
-                  {p.features.map(f => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
-                      <span className="text-emerald-400 mt-0.5 shrink-0">✓</span>{f}
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/contacto"
-                  className={`py-2.5 rounded-xl text-sm font-bold text-center transition-colors ${p.highlight ? "bg-emerald-500 hover:bg-emerald-400 text-white" : "border border-gray-700 hover:border-gray-500 text-gray-300"}`}>
-                  {p.cta}
-                </Link>
-              </div>
-            ))}
-          </div>
+          <h2 className="text-3xl font-bold text-center mb-3">Servicios y precios</h2>
+          <p className="text-gray-400 text-center mb-12">Elige el servicio que mejor se adapta a tu necesidad.</p>
+          {productos.length > 0 ? (
+            <>
+              <ProductosGrid productos={productos} />
+              <p className="text-center mt-8 text-sm">
+                <Link href="/servicios" className="text-emerald-400 hover:text-emerald-300">Ver todos los detalles →</Link>
+              </p>
+            </>
+          ) : (
+            <div className="text-center">
+              <p className="text-gray-400 mb-6">Cuéntanos qué datos necesitas y te enviamos una cotización a medida.</p>
+              <Link href="/contacto" className="inline-block px-6 py-2.5 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-white transition-colors">
+                Solicitar cotización
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 

@@ -87,9 +87,8 @@ scraperfy/
 │   │   └── categoria/[categoria]/
 │   │       └── page.tsx            — Posts filtrados por categoria
 │   ├── contacto/
-│   │   └── page.tsx                — Formulario de contacto/cotizacion
-│   ├── precios/
-│   │   └── page.tsx                — Pagina de precios (placeholder o detalle)
+│   │   └── page.tsx                — Server: lee servicios de la BD y renderiza ContactoForm
+│   │                                 (/precios no existe: next.config.ts la redirige a /servicios)
 │   ├── docs/
 │   │   └── page.tsx                — Documentacion de la API (placeholder)
 │   ├── sitemap.ts                  — MetadataRoute.Sitemap automatico
@@ -118,8 +117,10 @@ scraperfy/
 │           ├── blog/[id]/route.ts  — GET post individual por ID
 │           └── productos/route.ts  — GET/POST/PUT/DELETE productos
 ├── components/
-│   └── ScraperfyNav.tsx            — Navbar con mobile menu ("use client")
-│                                     Extraido para que app/page.tsx sea server component
+│   ├── ScraperfyNav.tsx            — Navbar con mobile menu ("use client")
+│   │                                 Extraido para que app/page.tsx sea server component
+│   ├── ProductosGrid.tsx           — Tarjetas de servicio/precio (server); usada por home y /servicios
+│   └── ContactoForm.tsx            — Formulario de contacto ("use client"); recibe servicios por props
 ├── lib/
 │   ├── auth.ts       — generateToken, verifyToken, isAuthenticated (cookie: scraperfy_admin_token)
 │   ├── blog.ts       — getPosts, getPost, getPostById, savePost, deletePost,
@@ -321,7 +322,7 @@ Links actuales en el nav:
   Caracteristicas → /#caracteristicas
   Servicios       → /servicios
   Blog            → /blog
-  Precios         → /precios
+  Precios         → /precios (redirige a /servicios)
   Docs            → /docs
   Contacto        → /contacto
   CTA button      → /contacto ("Empezar gratis")
@@ -329,6 +330,24 @@ Links actuales en el nav:
 Para agregar un link nuevo al nav, editar components/ScraperfyNav.tsx
 (tanto el menu desktop como el menu mobile).
 
+
+PRECIOS Y SERVICIOS: UNA SOLA FUENTE (LA BASE DE DATOS)
+--------------------------------------------------------------------------------
+Nunca escribir precios ni planes en el codigo. Todo sale de la tabla productos
+(admin > Productos):
+- Home (#precios) y /servicios: <ProductosGrid productos={await getProductos()} />
+- /contacto: el desplegable "Servicio de interes" lista los servicios activos
+  (nombre + precio). /contacto?plan=<nombre> lo preselecciona; los botones de las
+  tarjetas enlazan asi. Lo que se guarda en solicitudes.plan es el NOMBRE del servicio.
+- Meta description de /servicios: el "desde S/. X" se calcula del servicio activo
+  mas barato (generateMetadata + React cache()).
+- /precios se elimino: next.config.ts la redirige (308) a /servicios. Antes tenia
+  planes fijos Free/Pro/Enterprise que no existian en el gestor.
+- Los "S/. 2,499.00" dentro de bloques de codigo son datos de muestra de una
+  extraccion de ejemplo, no planes.
+- Ojo: los botones "Empezar gratis" (nav, CTAs) y "Empieza gratis hoy" (CTA final de
+  la home) quedaron de la epoca del plan Free. Ya no hay un producto gratis: es
+  decision de negocio si se cambian.
 
 PAGINA DE SERVICIOS (/servicios)
 --------------------------------------------------------------------------------

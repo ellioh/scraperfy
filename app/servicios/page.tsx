@@ -1,29 +1,36 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cache } from "react";
+import ProductosGrid from "@/components/ProductosGrid";
 import { getProductos } from "@/lib/productos";
 
-export const metadata: Metadata = {
-  title: "Servicios de Scraping | Scraperfy — Extracción de Datos",
-  description:
-    "Servicios de web scraping para empresas: extracción única, monitoreo mensual, datasets a medida y soluciones enterprise. Precios claros, entrega rápida.",
-  openGraph: {
-    title: "Servicios de Web Scraping — Scraperfy",
-    description: "Extracción de datos web para empresas. Desde S/. 199 por extracción única hasta soluciones enterprise con SLA garantizado.",
-    type: "website",
-    url: "https://scraperfy.com/servicios",
-  },
-};
+// generateMetadata y la pagina piden lo mismo: cache() lo consulta una sola vez por peticion.
+const getProductosActivos = cache(() => getProductos());
 
-const TIPO_LABEL: Record<string, string> = {
-  unico: "Pago único",
-  mensual: "/mes",
-  cotizar: "Cotizar",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const productos = await getProductosActivos();
+  // El "desde" sale del servicio de menor precio en la BD, no de un texto fijo.
+  const conPrecio = productos.filter((p) => p.tipo !== "cotizar" && p.precio > 0);
+  const minimo = conPrecio.sort((a, b) => a.precio - b.precio)[0];
+  const desde = minimo ? ` Desde ${minimo.moneda} ${minimo.precio.toLocaleString("es-PE")}.` : "";
+
+  return {
+    title: "Servicios de Scraping | Scraperfy — Extracción de Datos",
+    description:
+      "Servicios de web scraping para empresas: extracción única, monitoreo mensual, datasets a medida y soluciones enterprise. Precios claros, entrega rápida.",
+    openGraph: {
+      title: "Servicios de Web Scraping — Scraperfy",
+      description: `Extracción de datos web para empresas.${desde} Soluciones a medida y enterprise con SLA garantizado.`,
+      type: "website",
+      url: "https://scraperfy.com/servicios",
+    },
+  };
+}
 
 export const dynamic = "force-dynamic";
 
 export default async function ServiciosPage() {
-  const productos = await getProductos();
+  const productos = await getProductosActivos();
 
   return (
     <div className="min-h-screen bg-gray-950">
@@ -68,65 +75,7 @@ export default async function ServiciosPage() {
       {/* Services grid */}
       <section className="pb-24 px-4">
         <div className="max-w-5xl mx-auto">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {productos.map((prod) => (
-              <div
-                key={prod.id}
-                className={`rounded-2xl border flex flex-col ${
-                  prod.etiqueta === "Más popular"
-                    ? "border-emerald-500 bg-emerald-950/30 shadow-lg shadow-emerald-900/20"
-                    : prod.etiqueta === "Enterprise"
-                    ? "border-cyan-700/50 bg-cyan-950/20"
-                    : "border-gray-800 bg-gray-900/50"
-                } p-7`}
-              >
-                {prod.etiqueta && (
-                  <div className={`text-xs font-bold uppercase tracking-widest mb-3 ${
-                    prod.etiqueta === "Más popular" ? "text-emerald-400" : "text-cyan-400"
-                  }`}>
-                    {prod.etiqueta}
-                  </div>
-                )}
-                <h2 className="font-extrabold text-xl text-white mb-2">{prod.nombre}</h2>
-                <p className="text-gray-400 text-sm leading-relaxed mb-6 flex-1">{prod.descripcion}</p>
-
-                {/* Price */}
-                <div className="mb-6">
-                  {prod.tipo === "cotizar" ? (
-                    <span className="text-2xl font-extrabold text-white">A cotizar</span>
-                  ) : (
-                    <>
-                      <span className="text-3xl font-extrabold text-white">
-                        {prod.moneda} {prod.precio.toLocaleString("es-PE")}
-                      </span>
-                      <span className="text-gray-500 text-sm ml-1">{TIPO_LABEL[prod.tipo]}</span>
-                    </>
-                  )}
-                </div>
-
-                {/* Features */}
-                <ul className="space-y-2.5 mb-8">
-                  {prod.caracteristicas.map((c) => (
-                    <li key={c} className="flex items-start gap-2 text-sm text-gray-300">
-                      <span className="text-emerald-400 mt-0.5 shrink-0">✓</span>
-                      {c}
-                    </li>
-                  ))}
-                </ul>
-
-                <Link
-                  href="/contacto"
-                  className={`py-2.5 rounded-xl text-sm font-bold text-center transition-colors ${
-                    prod.etiqueta === "Más popular"
-                      ? "bg-emerald-500 hover:bg-emerald-400 text-white"
-                      : "border border-gray-700 hover:border-gray-500 text-gray-300 hover:text-white"
-                  }`}
-                >
-                  {prod.cta}
-                </Link>
-              </div>
-            ))}
-          </div>
+          <ProductosGrid productos={productos} />
 
           {/* Guarantee */}
           <div className="mt-14 rounded-2xl border border-gray-800 bg-gray-900/40 p-8 grid sm:grid-cols-3 gap-6 text-center">

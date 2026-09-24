@@ -59,6 +59,13 @@ export async function getProductoById(id: string): Promise<Producto | undefined>
 
 const TIPOS: Producto["tipo"][] = ["unico", "mensual", "cotizar"];
 
+/** Precio legible: "S/. 299 /mes", "S/. 199", o "A cotizar". */
+export function precioTexto(p: Pick<Producto, "tipo" | "moneda" | "precio">): string {
+  if (p.tipo === "cotizar") return "A cotizar";
+  const monto = `${p.moneda} ${p.precio.toLocaleString("es-PE")}`;
+  return p.tipo === "mensual" ? `${monto} /mes` : monto;
+}
+
 export async function saveProducto(data: Partial<Producto> & { nombre: string }): Promise<Producto> {
   const producto: Producto = {
     id: data.id || Date.now().toString(),
