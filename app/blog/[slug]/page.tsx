@@ -8,13 +8,11 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateStaticParams() {
-  return getPosts().map((post) => ({ slug: post.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const post = getPost(slug);
+  const post = await getPost(slug);
   if (!post) return { title: "Artículo no encontrado | Scraperfy" };
 
   return {
@@ -45,10 +43,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const post = getPost(slug);
+  const post = await getPost(slug);
   if (!post) notFound();
 
-  const relatedPosts = getPosts()
+  const relatedPosts = (await getPosts())
     .filter((p) => p.slug !== slug && p.categoria === post.categoria)
     .slice(0, 3);
 

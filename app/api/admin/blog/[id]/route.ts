@@ -8,7 +8,7 @@ export async function GET(
 ) {
   if (!(await isAuthenticated())) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const { id } = await params;
-  const post = getPostById(id);
+  const post = await getPostById(id);
   if (!post) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
   return NextResponse.json(post);
 }

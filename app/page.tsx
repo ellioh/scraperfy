@@ -41,8 +41,10 @@ const PLANS = [
   },
 ];
 
-export default function HomePage() {
-  const recentPosts = getPosts().slice(0, 3);
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const recentPosts = (await getPosts()).slice(0, 3);
 
   return (
     <>

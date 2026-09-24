@@ -7,11 +7,10 @@ import Link from "next/link";
 export default async function DashboardPage() {
   if (!(await isAuthenticated())) redirect("/admin");
 
-  const solicitudes = getSolicitudes();
+  const [solicitudes, posts] = await Promise.all([getSolicitudes(), getPosts(false)]);
   const noLeidas = solicitudes.filter(s => !s.leido).length;
   const hoy = new Date().toLocaleDateString("es-PE", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
-  const posts = getPosts(false);
   const publicados = posts.filter((p) => p.publicado).length;
 
   return (

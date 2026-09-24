@@ -1,17 +1,5 @@
-import fs from "fs";
-import path from "path";
-
-const dataDir = path.join(process.cwd(), "data");
-
-function readProductos(): Producto[] {
-  const p = path.join(dataDir, "productos.json");
-  if (!fs.existsSync(p)) return [];
-  return JSON.parse(fs.readFileSync(p, "utf-8"));
-}
-
-function writeProductos(productos: Producto[]) {
-  fs.writeFileSync(path.join(dataDir, "productos.json"), JSON.stringify(productos, null, 2));
-}
+import type { RowDataPacket } from "mysql2/promise";
+import { execute, parseJsonArray, query } from "@/lib/db";
 
 export interface Producto {
   id: string;
@@ -27,19 +15,51 @@ export interface Producto {
   orden: number;
 }
 
-export function getProductos(soloActivos = true): Producto[] {
-  const all = readProductos();
-  return (soloActivos ? all.filter((p) => p.activo) : all).sort((a, b) => a.orden - b.orden);
+interface ProductoRow extends RowDataPacket {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  precio: string | number; // DECIMAL llega como string
+  moneda: string;
+  tipo: Producto["tipo"];
+  etiqueta: string;
+  caracteristicas: string;
+  cta: string;
+  activo: number;
+  orden: number;
 }
 
-export function getProductoById(id: string): Producto | undefined {
-  return readProductos().find((p) => p.id === id);
+function toProducto(r: ProductoRow): Producto {
+  return {
+    id: r.id,
+    nombre: r.nombre,
+    descripcion: r.descripcion,
+    precio: Number(r.precio),
+    moneda: r.moneda,
+    tipo: r.tipo,
+    etiqueta: r.etiqueta,
+    caracteristicas: parseJsonArray(r.caracteristicas),
+    cta: r.cta,
+    activo: Boolean(r.activo),
+    orden: r.orden,
+  };
 }
 
-export function saveProducto(data: Partial<Producto> & { nombre: string }): Producto {
-  const all = readProductos();
-  const isNew = !data.id;
+export async function getProductos(soloActivos = true): Promise<Producto[]> {
+  const rows = await query<ProductoRow>(
+    `SELECT * FROM productos ${soloActivos ? "WHERE activo = 1" : ""} ORDER BY orden, nombre`
+  );
+  return rows.map(toProducto);
+}
 
+export async function getProductoById(id: string): Promise<Producto | undefined> {
+  const rows = await query<ProductoRow>("SELECT * FROM productos WHERE id = ? LIMIT 1", [id]);
+  return rows[0] ? toProducto(rows[0]) : undefined;
+}
+
+const TIPOS: Producto["tipo"][] = ["unico", "mensual", "cotizar"];
+
+export async function saveProducto(data: Partial<Producto> & { nombre: string }): Promise<Producto> {
   const producto: Producto = {
     id: data.id || Date.now().toString(),
     nombre: data.nombre,
@@ -54,18 +74,27 @@ export function saveProducto(data: Partial<Producto> & { nombre: string }): Prod
     orden: data.orden ?? 99,
   };
 
-  if (isNew) {
-    all.push(producto);
-  } else {
-    const idx = all.findIndex((p) => p.id === producto.id);
-    if (idx >= 0) all[idx] = producto;
-    else all.push(producto);
-  }
+  if (!TIPOS.includes(producto.tipo)) throw new Error("Tipo de servicio invalido");
+  if (!Number.isFinite(producto.precio) || producto.precio < 0) throw new Error("Precio invalido");
 
-  writeProductos(all);
+  await execute(
+    `INSERT INTO productos
+       (id, nombre, descripcion, precio, moneda, tipo, etiqueta, caracteristicas, cta, activo, orden)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       nombre = VALUES(nombre), descripcion = VALUES(descripcion), precio = VALUES(precio),
+       moneda = VALUES(moneda), tipo = VALUES(tipo), etiqueta = VALUES(etiqueta),
+       caracteristicas = VALUES(caracteristicas), cta = VALUES(cta),
+       activo = VALUES(activo), orden = VALUES(orden)`,
+    [
+      producto.id, producto.nombre, producto.descripcion, producto.precio, producto.moneda,
+      producto.tipo, producto.etiqueta, JSON.stringify(producto.caracteristicas), producto.cta,
+      producto.activo ? 1 : 0, producto.orden,
+    ]
+  );
   return producto;
 }
 
-export function deleteProducto(id: string) {
-  writeProductos(readProductos().filter((p) => p.id !== id));
+export async function deleteProducto(id: string): Promise<void> {
+  await execute("DELETE FROM productos WHERE id = ?", [id]);
 }

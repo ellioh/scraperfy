@@ -24,17 +24,22 @@ Sin excepcion. No esperar a que el usuario lo pida.
 | Framework    | Next.js 15.3.3 (App Router), React 19     |
 | Lenguaje     | TypeScript 5 strict                       |
 | Estilos      | Tailwind CSS 3 — clases directas, sin CSS modules |
-| Base de datos| Ninguna — JSON planos en `/data/`         |
+| Base de datos| MySQL / MariaDB via `mysql2` (SQL directo, sin ORM) — `lib/db.ts` |
+| Automatizacion| n8n por webhook (`lib/n8n.ts`, opcional)  |
 | Auth         | Cookie httpOnly propia (sin NextAuth)     |
 | Markdown     | Renderer propio en `lib/markdown.ts`      |
-| Dependencias | Solo next + react + react-dom             |
+| Dependencias | next + react + react-dom + mysql2         |
 
 Comandos:
 ```
-npm run dev        # desarrollo
-npm run build      # build + typecheck
+npm run dev        # desarrollo (necesita MySQL corriendo)
+npm run build      # build + typecheck (NO necesita la BD)
 npx tsc --noEmit   # solo typecheck
+npm run db:init    # crea BD + tablas y siembra desde data/*.json (idempotente)
 ```
+
+Setup local: copiar `.env.example` a `.env.local`, tener MySQL/MariaDB arriba
+(XAMPP sirve: `C:\xampp8.2.12\mysql\bin\mysqld.exe --defaults-file=my.ini`) y correr `npm run db:init`.
 
 ---
 
@@ -84,15 +89,19 @@ app/
 components/
   ScraperfyNav.tsx            — Navbar "use client" (extraida para que page.tsx sea server)
 
-lib/
+lib/                          — TODAS las funciones de datos son async (await)
   auth.ts        — isAuthenticated(), cookie: "scraperfy_admin_token"
+  db.ts          — pool mysql2 (singleton), query(), execute(), toIso(), parseJsonArray()
   blog.ts        — getPosts, getPost, getPostById, savePost, deletePost,
                    getCategorias, getPostsByCategoria, slugify
   data.ts        — getSolicitudes, saveSolicitud, marcarLeido
   markdown.ts    — renderMarkdown(raw): string
+  n8n.ts         — notificarSolicitud(): POST al webhook de n8n (nunca lanza)
   productos.ts   — getProductos, getProductoById, saveProducto, deleteProducto
 
-data/
+db/schema.sql                 — tablas posts, productos, solicitudes
+scripts/db-init.mjs           — aplica schema.sql + siembra desde data/*.json
+data/                         — SOLO semilla inicial (ya no es la fuente de verdad)
   posts.json / productos.json / solicitudes.json
 ```
 
@@ -101,6 +110,11 @@ data/
 ---
 
 ## Modelos de datos
+
+Viven en MySQL (tablas `posts`, `productos`, `solicitudes`, columnas en snake_case; ver `db/schema.sql`).
+Las interfaces TS mantienen camelCase (`fechaPublicacion`, `metaDescripcion`): el mapeo esta en `lib/*.ts`.
+Los arrays (`tags`, `caracteristicas`) se guardan como JSON en columnas TEXT. Fechas: DATETIME en UTC.
+Los ejemplos de abajo son el formato de la semilla en `data/*.json`.
 
 **Post** (`data/posts.json`):
 ```json
@@ -155,6 +169,8 @@ Tipo puede ser: `"unico"` | `"mensual"` | `"cotizar"`
 
 - Cookie: `scraperfy_admin_token`
 - Env vars: `ADMIN_PASSWORD`, `ADMIN_TOKEN_SECRET`
+- Env vars BD: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SSL`, `DB_POOL_SIZE`
+- Env vars n8n (opcionales): `N8N_WEBHOOK_URL`, `N8N_WEBHOOK_SECRET` (header `X-Scraperfy-Secret`)
 - Flujo: login → POST `/api/admin/login` → cookie httpOnly → `isAuthenticated()` (de `lib/auth.ts`) en TODAS las rutas protegidas, incluidas las API de blog y productos
 
 ---
@@ -162,11 +178,12 @@ Tipo puede ser: `"unico"` | `"mensual"` | `"cotizar"`
 ## Convenciones clave
 
 1. **Server components por defecto.** `"use client"` solo si hay `useState`, `useEffect` o eventos.
-2. **Nunca importar `lib/*.ts` en `"use client"`** — usan `fs` de Node.js.
+2. **Nunca importar `lib/*.ts` en `"use client"`** — usan `mysql2` (Node.js). Y recordar `await`: todas las funciones de datos son async.
 3. La **navbar** vive en `components/ScraperfyNav.tsx` ("use client") para que `app/page.tsx` pueda ser server component y llamar a `getPosts()`.
 4. API routes de `/api/admin/*`: siempre verificar auth primero. Error: `{ error: "No autorizado" }` status 401.
-5. `generateStaticParams` en rutas dinamicas del blog. `generateMetadata` para SEO.
-6. IDs: strings. Nuevos registros: `Date.now().toString()`.
+5. Paginas/rutas que leen la BD llevan `export const dynamic = "force-dynamic"` (sin `generateStaticParams`): el contenido se edita desde el admin y el build no debe depender de la BD. `generateMetadata` para SEO.
+6. IDs: strings (VARCHAR). Nuevos registros: `Date.now().toString()`.
+   `savePost` hace INSERT o UPDATE explicito (NO `ON DUPLICATE KEY`, que sobrescribiria otro post con el mismo slug).
 7. Para agregar link al nav: editar `components/ScraperfyNav.tsx` (menu desktop Y mobile).
 8. Para agregar pagina publica: crear `app/nueva/page.tsx` y agregar a `app/sitemap.ts`.
 

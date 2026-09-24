@@ -7,14 +7,12 @@ interface Props {
   params: Promise<{ categoria: string }>;
 }
 
-export async function generateStaticParams() {
-  return getCategorias().map((cat) => ({ categoria: cat.toLowerCase() }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { categoria } = await params;
   const decoded = decodeURIComponent(categoria);
-  const displayName = getCategorias().find((c) => c.toLowerCase() === decoded);
+  const displayName = (await getCategorias()).find((c) => c.toLowerCase() === decoded);
   if (!displayName) return { title: "Categoría no encontrada | Scraperfy" };
 
   return {
@@ -26,11 +24,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CategoriaPage({ params }: Props) {
   const { categoria } = await params;
   const decoded = decodeURIComponent(categoria);
-  const allCats = getCategorias();
+  const allCats = await getCategorias();
   const displayName = allCats.find((c) => c.toLowerCase() === decoded);
   if (!displayName) notFound();
 
-  const posts = getPostsByCategoria(displayName);
+  const posts = await getPostsByCategoria(displayName);
 
   return (
     <div className="min-h-screen bg-gray-950">

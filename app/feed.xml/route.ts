@@ -11,8 +11,10 @@ function escapeXml(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
-  const posts = getPosts();
+  const posts = await getPosts();
 
   const items = posts
     .slice(0, 20)

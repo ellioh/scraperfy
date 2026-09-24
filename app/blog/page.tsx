@@ -14,9 +14,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function BlogPage() {
-  const posts = getPosts();
-  const categorias = getCategorias();
+export const dynamic = "force-dynamic";
+
+export default async function BlogPage() {
+  const [posts, categorias] = await Promise.all([getPosts(), getCategorias()]);
 
   return (
     <div className="min-h-screen bg-gray-950">

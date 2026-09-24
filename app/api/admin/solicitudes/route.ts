@@ -4,12 +4,13 @@ import { isAuthenticated } from "@/lib/auth";
 
 export async function GET() {
   if (!(await isAuthenticated())) return NextResponse.json(null, { status: 401 });
-  return NextResponse.json({ data: getSolicitudes() });
+  return NextResponse.json({ data: await getSolicitudes() });
 }
 
 export async function PATCH(request: NextRequest) {
   if (!(await isAuthenticated())) return NextResponse.json(null, { status: 401 });
   const { id } = await request.json();
-  marcarLeido(id);
+  if (typeof id !== "string" || !id) return NextResponse.json({ error: "ID requerido" }, { status: 400 });
+  await marcarLeido(id);
   return NextResponse.json({ ok: true });
 }

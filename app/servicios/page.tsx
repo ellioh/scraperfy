@@ -20,8 +20,10 @@ const TIPO_LABEL: Record<string, string> = {
   cotizar: "Cotizar",
 };
 
-export default function ServiciosPage() {
-  const productos = getProductos();
+export const dynamic = "force-dynamic";
+
+export default async function ServiciosPage() {
+  const productos = await getProductos();
 
   return (
     <div className="min-h-screen bg-gray-950">

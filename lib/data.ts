@@ -1,17 +1,5 @@
-import fs from "fs";
-import path from "path";
-
-const dataDir = path.join(process.cwd(), "data");
-
-function readJson<T>(file: string): T {
-  const p = path.join(dataDir, file);
-  if (!fs.existsSync(p)) return [] as unknown as T;
-  return JSON.parse(fs.readFileSync(p, "utf-8"));
-}
-
-function writeJson(file: string, data: unknown) {
-  fs.writeFileSync(path.join(dataDir, file), JSON.stringify(data, null, 2));
-}
+import type { RowDataPacket } from "mysql2/promise";
+import { execute, query, toIso } from "@/lib/db";
 
 export interface Solicitud {
   id: string;
@@ -27,26 +15,60 @@ export interface Solicitud {
   leido: boolean;
 }
 
-export function getSolicitudes(): Solicitud[] {
-  return readJson<Solicitud[]>("solicitudes.json");
+interface SolicitudRow extends RowDataPacket {
+  id: string;
+  nombre: string;
+  email: string;
+  empresa: string;
+  url_objetivo: string;
+  frecuencia: string;
+  formato: string;
+  descripcion: string;
+  plan: string;
+  fecha: Date;
+  leido: number;
 }
 
-export function saveSolicitud(s: Omit<Solicitud, "id" | "fecha" | "leido">): Solicitud {
-  const all = getSolicitudes();
+function toSolicitud(r: SolicitudRow): Solicitud {
+  return {
+    id: r.id,
+    nombre: r.nombre,
+    email: r.email,
+    empresa: r.empresa,
+    url_objetivo: r.url_objetivo,
+    frecuencia: r.frecuencia,
+    formato: r.formato,
+    descripcion: r.descripcion,
+    plan: r.plan,
+    fecha: toIso(r.fecha),
+    leido: Boolean(r.leido),
+  };
+}
+
+export async function getSolicitudes(): Promise<Solicitud[]> {
+  const rows = await query<SolicitudRow>("SELECT * FROM solicitudes ORDER BY fecha DESC");
+  return rows.map(toSolicitud);
+}
+
+export async function saveSolicitud(s: Omit<Solicitud, "id" | "fecha" | "leido">): Promise<Solicitud> {
   const nueva: Solicitud = {
     ...s,
     id: Date.now().toString(),
     fecha: new Date().toISOString(),
     leido: false,
   };
-  all.unshift(nueva);
-  writeJson("solicitudes.json", all);
+  await execute(
+    `INSERT INTO solicitudes
+       (id, nombre, email, empresa, url_objetivo, frecuencia, formato, descripcion, plan, fecha, leido)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+    [
+      nueva.id, nueva.nombre, nueva.email, nueva.empresa, nueva.url_objetivo,
+      nueva.frecuencia, nueva.formato, nueva.descripcion, nueva.plan, new Date(nueva.fecha),
+    ]
+  );
   return nueva;
 }
 
-export function marcarLeido(id: string) {
-  writeJson(
-    "solicitudes.json",
-    getSolicitudes().map((s) => (s.id === id ? { ...s, leido: true } : s))
-  );
+export async function marcarLeido(id: string): Promise<void> {
+  await execute("UPDATE solicitudes SET leido = 1 WHERE id = ?", [id]);
 }

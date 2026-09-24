@@ -29,17 +29,22 @@ STACK TECNICO
 - Framework:      Next.js 15.3.3 (App Router) con React 19
 - Lenguaje:       TypeScript 5 (strict mode)
 - Estilos:        Tailwind CSS 3 — sin CSS modules, sin styled-components
-- Base de datos:  NINGUNA — almacenamiento en archivos JSON en /data/
+- Base de datos:  MySQL / MariaDB con el driver mysql2 (SQL directo, sin ORM)
+- Automatizacion: n8n por webhook (opcional), ver lib/n8n.ts
 - Autenticacion:  Cookie httpOnly propia (sin NextAuth, sin JWT de terceros)
-- Dependencias:   Solo next + react + react-dom (sin librerias de UI externas)
+- Dependencias:   next + react + react-dom + mysql2 (sin librerias de UI externas)
 - Markdown:       Renderer propio en lib/markdown.ts (sin remark, sin marked)
 - Deploy:         Vercel (inferido por estructura; sin config especial)
 
 Comandos:
-  npm run dev     — servidor de desarrollo en http://localhost:3000
-  npm run build   — build de produccion (verifica TypeScript)
+  npm run dev     — servidor de desarrollo en http://localhost:3000 (necesita MySQL)
+  npm run build   — build de produccion (verifica TypeScript; NO necesita la BD)
   npm run start   — sirve el build de produccion
+  npm run db:init — crea la BD y las tablas y siembra desde data/*.json (idempotente)
   npx tsc --noEmit — solo verificacion de tipos (sin emitir)
+
+Setup local: copiar .env.example a .env.local, levantar MySQL/MariaDB (XAMPP sirve)
+y correr npm run db:init. Si el puerto 3000 esta ocupado, Next usa el 3001.
 
 
 PALETA DE COLORES Y DISENO
@@ -104,7 +109,7 @@ scraperfy/
 │   │       └── productos/
 │   │           └── page.tsx        — CRUD inline de servicios/productos
 │   └── api/
-│       ├── contacto/route.ts       — POST: guarda solicitud en data/solicitudes.json
+│       ├── contacto/route.ts       — POST: valida, guarda la solicitud en MySQL y avisa a n8n
 │       └── admin/
 │           ├── login/route.ts      — POST: verifica password, setea cookie
 │           ├── logout/route.ts     — POST: borra cookie
@@ -120,9 +125,15 @@ scraperfy/
 │   ├── blog.ts       — getPosts, getPost, getPostById, savePost, deletePost,
 │   │                   getCategorias, getPostsByCategoria, slugify
 │   ├── data.ts       — getSolicitudes, saveSolicitud, marcarLeido
+│   ├── db.ts         — pool mysql2 (singleton), query(), execute(), toIso(), parseJsonArray()
 │   ├── markdown.ts   — renderMarkdown(raw: string): string
+│   ├── n8n.ts        — notificarSolicitud(): POST al webhook de n8n (nunca lanza)
 │   └── productos.ts  — getProductos, getProductoById, saveProducto, deleteProducto
-├── data/
+├── db/
+│   └── schema.sql       — tablas posts, productos, solicitudes
+├── scripts/
+│   └── db-init.mjs      — aplica schema.sql y siembra desde data/*.json
+├── data/                — SOLO semilla inicial (la fuente de verdad es MySQL)
 │   ├── posts.json       — Array de objetos Post (blog)
 │   ├── productos.json   — Array de objetos Producto (servicios)
 │   └── solicitudes.json — Array de objetos Solicitud (formulario de contacto)
@@ -200,46 +211,71 @@ Sistema propio sin librerias externas:
 6. TODAS las rutas protegidas (paginas y API, incluidas /api/admin/blog/* y
    /api/admin/productos/*) llaman isAuthenticated() de lib/auth.ts
 
-Variables de entorno necesarias (.env.local):
+Variables de entorno necesarias (.env.local; plantilla completa en .env.example):
   ADMIN_PASSWORD=tu-password-seguro
   ADMIN_TOKEN_SECRET=minimo-32-caracteres-aleatorios
+  DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_SSL, DB_POOL_SIZE
+  N8N_WEBHOOK_URL, N8N_WEBHOOK_SECRET   (opcionales)
 
 Nota: ADMIN_SECRET ya no se usa. Antes las API de blog y productos comparaban
 la cookie contra ADMIN_SECRET, lo que nunca coincidia con el token del login
 (siempre 401). Corregido al unificar en isAuthenticated().
 
 
-CAPA DE DATOS (sin base de datos)
+CAPA DE DATOS (MySQL / MariaDB)
 --------------------------------------------------------------------------------
-Todo se guarda en archivos JSON en /data/. Las funciones de lib/*.ts usan
-Node.js fs directamente. Solo funcionan en server components y API routes.
+Tablas: posts, productos, solicitudes (ver db/schema.sql). Las columnas son
+snake_case (fecha_publicacion, meta_descripcion...) y las interfaces TS son
+camelCase: el mapeo esta en lib/blog.ts, lib/productos.ts y lib/data.ts.
+- Los arrays (tags, caracteristicas) se guardan como JSON en columnas TEXT
+  (portable entre MySQL y MariaDB, donde JSON es un alias de LONGTEXT).
+- Fechas: DATETIME en UTC (pool con timezone "Z"); las funciones devuelven ISO 8601.
+- precio es DECIMAL(10,2): mysql2 lo devuelve como string, se convierte con Number().
+- Solo funciona en server components y API routes (usa mysql2).
 
+TODAS las funciones son async: siempre usar await.
 NUNCA importar lib/blog.ts, lib/data.ts o lib/productos.ts en "use client".
 
 Patrones de uso:
 
   // Blog
-  const posts    = getPosts();           // solo publicados
-  const posts    = getPosts(false);      // todos (para admin)
-  const post     = getPost("mi-slug");
-  const post     = getPostById("123");
-  savePost({ titulo, slug, ... })        // crea si no tiene id, actualiza si tiene
-  deletePost("123")
+  const posts    = await getPosts();           // solo publicados
+  const posts    = await getPosts(false);      // todos (para admin)
+  const post     = await getPost("mi-slug");
+  const post     = await getPostById("123");
+  await savePost({ titulo, slug, ... })        // INSERT si no existe el id, UPDATE si existe
+  await deletePost("123")
 
   // Productos
-  const prods    = getProductos();       // solo activos (soloActivos=true por defecto)
-  const prods    = getProductos(false);  // todos incluyendo inactivos (para admin)
-  const prod     = getProductoById("svc-001");
-  saveProducto({ nombre, ... })          // crea o actualiza
-  deleteProducto("svc-001")
+  const prods    = await getProductos();       // solo activos (soloActivos=true por defecto)
+  const prods    = await getProductos(false);  // todos incluyendo inactivos (para admin)
+  const prod     = await getProductoById("svc-001");
+  await saveProducto({ nombre, ... })          // crea o actualiza
+  await deleteProducto("svc-001")
 
   // Solicitudes
-  const solic    = getSolicitudes();
-  saveSolicitud({ nombre, email, ... })
-  marcarLeido("123")
+  const solic    = await getSolicitudes();
+  await saveSolicitud({ nombre, email, ... })
+  await marcarLeido("123")
 
-El campo "contenido" de posts puede tener saltos de linea reales. Node.js
-JSON.parse los acepta; usar JSON.stringify al escribir para mantener coherencia.
+IMPORTANTE (bug ya corregido): savePost NO usa INSERT ... ON DUPLICATE KEY UPDATE.
+Ese patron se dispara con CUALQUIER clave unica (incluido slug) y sobrescribia
+en silencio otro post con el mismo slug. Ahora un slug repetido falla con un
+error claro ("Ya existe otro post con el slug ...", HTTP 400).
+
+Migracion desde JSON: npm run db:init crea la BD y las tablas y siembra desde
+data/*.json solo si las tablas estan vacias. Despues de eso, data/*.json ya no
+se lee en runtime.
+
+INTEGRACION n8n (lib/n8n.ts)
+--------------------------------------------------------------------------------
+Al guardar una solicitud en /api/contacto se hace POST a N8N_WEBHOOK_URL con
+  { "evento": "solicitud.nueva", "solicitud": { id, nombre, email, empresa,
+    url_objetivo, frecuencia, formato, descripcion, plan, fecha, leido } }
+Si N8N_WEBHOOK_SECRET esta definido se envia como header X-Scraperfy-Secret
+(en n8n: nodo Webhook > Authentication > Header Auth). Timeout 5s. Es
+best-effort: si n8n no esta configurado o falla, se loguea el error y la
+solicitud igual queda guardada; el visitante no ve ningun error.
 
 
 SEO Y METADATOS
@@ -345,7 +381,10 @@ PATRONES Y CONVENCIONES
 3. Rutas API admin siempre verifican autenticacion primero. Retorno estandar de
    error: { error: "No autorizado" } con status 401.
 
-4. generateStaticParams en /blog/[slug] y /blog/categoria/[categoria] para SSG.
+4. Las paginas y rutas que leen la BD llevan export const dynamic = "force-dynamic"
+   (home, /servicios, /blog, /blog/[slug], /blog/categoria/[categoria],
+   sitemap.ts, feed.xml, dashboard). No hay generateStaticParams: el contenido
+   se edita desde el admin y el build no debe depender de la BD.
    generateMetadata para SEO dinamico por pagina.
 
 5. IDs de posts: strings como "post-001". IDs de productos: strings como
@@ -362,15 +401,15 @@ PATRONES Y CONVENCIONES
    Agregar la ruta al sitemap en app/sitemap.ts.
 
 
-CATEGORIAS DE BLOG ACTUALES (data/posts.json)
+CATEGORIAS DE BLOG ACTUALES (semilla)
 --------------------------------------------------------------------------------
 - Tutorial
 - Comparativa
 - Casos de Uso
 
-Para agregar una nueva categoria: simplemente crear un post con la nueva
-categoria. Se generara automaticamente la pagina /blog/categoria/[nueva-cat]
-via generateStaticParams (requiere rebuild).
+Para agregar una nueva categoria: simplemente crear un post publicado con la
+nueva categoria. La pagina /blog/categoria/[nueva-cat] existe de inmediato
+(es dinamica, no requiere rebuild).
 
 
 ERRORES COMUNES Y SOLUCIONES
@@ -414,3 +453,11 @@ Nunca hacer push de .env.local (esta en .gitignore).
 Variables de entorno en produccion (configurar en Vercel dashboard):
   ADMIN_PASSWORD
   ADMIN_TOKEN_SECRET
+  DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
+  DB_SSL=true si el proveedor exige TLS
+  DB_POOL_SIZE (bajo en serverless, 2-5)
+  N8N_WEBHOOK_URL, N8N_WEBHOOK_SECRET (opcionales)
+
+Vercel no aloja MySQL: hace falta una BD accesible por internet (VPS propio,
+Aiven, Railway, TiDB Cloud, etc.). Correr npm run db:init UNA vez apuntando a
+esa BD (con las DB_* exportadas) antes del primer uso.

@@ -3,9 +3,10 @@ import { getPosts, getCategorias } from "@/lib/blog";
 
 const BASE_URL = "https://scraperfy.com";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const posts = getPosts();
-  const categorias = getCategorias();
+export const dynamic = "force-dynamic";
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const [posts, categorias] = await Promise.all([getPosts(), getCategorias()]);
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
