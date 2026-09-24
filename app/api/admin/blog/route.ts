@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPosts, getPostById, savePost, deletePost } from "@/lib/blog";
-import { cookies } from "next/headers";
-
-async function isAuthenticated(): Promise<boolean> {
-  const store = await cookies();
-  return store.get("scraperfy_admin_token")?.value === process.env.ADMIN_SECRET;
-}
+import { isAuthenticated } from "@/lib/auth";
 
 export async function GET() {
   if (!(await isAuthenticated())) return NextResponse.json({ error: "No autorizado" }, { status: 401 });

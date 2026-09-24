@@ -197,21 +197,16 @@ Sistema propio sin librerias externas:
 3. Si correcto: setea cookie httpOnly "scraperfy_admin_token" con token Base64
 4. Token: Buffer.from(`${SECRET}:${Date.now()}`).toString("base64")
 5. Verificacion: decoded.startsWith(`${SECRET}:`)
-6. Las rutas protegidas llaman isAuthenticated() de lib/auth.ts
-7. Las API routes de /api/admin/blog/* y /api/admin/productos/* verifican
-   directamente: cookie("scraperfy_admin_token").value === ADMIN_SECRET
+6. TODAS las rutas protegidas (paginas y API, incluidas /api/admin/blog/* y
+   /api/admin/productos/*) llaman isAuthenticated() de lib/auth.ts
 
 Variables de entorno necesarias (.env.local):
   ADMIN_PASSWORD=tu-password-seguro
   ADMIN_TOKEN_SECRET=minimo-32-caracteres-aleatorios
-  ADMIN_SECRET=mismo-o-diferente-secret-para-apis-de-blog-y-productos
 
-ATENCION: Hay dos mecanismos coexistiendo:
-- lib/auth.ts usa ADMIN_TOKEN_SECRET para generar/verificar tokens (Base64)
-- api/admin/blog/* y api/admin/productos/* comparan la cookie directamente
-  contra ADMIN_SECRET. Para que funcionen, ADMIN_SECRET debe coincidir con
-  el token almacenado. En produccion, unificar o asegurarse que ambas variables
-  esten configuradas consistentemente.
+Nota: ADMIN_SECRET ya no se usa. Antes las API de blog y productos comparaban
+la cookie contra ADMIN_SECRET, lo que nunca coincidia con el token del login
+(siempre 401). Corregido al unificar en isAuthenticated().
 
 
 CAPA DE DATOS (sin base de datos)
@@ -394,8 +389,8 @@ Error: productos/page.tsx form no muestra el producto al editar
 Verificar: que setMostrarForm(true) se llame en iniciarEdicion().
 
 Error: 401 al llamar a /api/admin/blog o /api/admin/productos desde el admin
-Causa posible: ADMIN_SECRET no esta definido o no coincide con el token de la
-cookie. Verificar .env.local tenga ADMIN_SECRET configurado.
+Causa posible: sesion vencida (cookie de 8h) o ADMIN_TOKEN_SECRET distinto al
+usado al iniciar sesion. Volver a iniciar sesion en /admin.
 
 Error: /blog/categoria/casos de uso — URL con espacio
 El slug de categoria se genera con encodeURIComponent en los links.
@@ -419,4 +414,3 @@ Nunca hacer push de .env.local (esta en .gitignore).
 Variables de entorno en produccion (configurar en Vercel dashboard):
   ADMIN_PASSWORD
   ADMIN_TOKEN_SECRET
-  ADMIN_SECRET

@@ -154,9 +154,8 @@ Tipo puede ser: `"unico"` | `"mensual"` | `"cotizar"`
 ## Autenticacion admin
 
 - Cookie: `scraperfy_admin_token`
-- Env vars: `ADMIN_PASSWORD`, `ADMIN_TOKEN_SECRET`, `ADMIN_SECRET`
-- Flujo: login → POST `/api/admin/login` → cookie httpOnly → `isAuthenticated()` en rutas protegidas
-- Las API routes de blog y productos verifican `cookie === ADMIN_SECRET` directamente
+- Env vars: `ADMIN_PASSWORD`, `ADMIN_TOKEN_SECRET`
+- Flujo: login → POST `/api/admin/login` → cookie httpOnly → `isAuthenticated()` (de `lib/auth.ts`) en TODAS las rutas protegidas, incluidas las API de blog y productos
 
 ---
 
@@ -204,7 +203,7 @@ Perfiles de Upwork/Workana en `/servicios`: buscar `href="#"` y reemplazar con U
 |-------|-------|----------|
 | "only works in a Client Component" | Importar lib/*.ts en "use client" | Mover a server component o API route |
 | Tipo union no asignable a literal | useState infiere tipo estrecho | Declarar `type Tipo = "unico"\|"mensual"\|"cotizar"` y `useState<FormState>` |
-| 401 en API blog/productos | `ADMIN_SECRET` no configurado | Agregar a .env.local |
+| 401 en API blog/productos | Sesion vencida o `ADMIN_TOKEN_SECRET` distinto al usado al hacer login | Volver a iniciar sesion en /admin |
 | /blog/categoria/casos de uso — URL rota | Categoria con espacio | Usar `encodeURIComponent` en links, `decodeURIComponent` al leer |
 
 ---
